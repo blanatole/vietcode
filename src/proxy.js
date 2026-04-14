@@ -103,6 +103,7 @@ export function startProxy(port = 7888) {
           ...req.headers,
           host: targetUrl.hostname,
           'x-api-key': config.api_key,
+          authorization: `Bearer ${config.api_key}`,
           'anthropic-version': req.headers['anthropic-version'] || '2023-06-01'
         }
       };
