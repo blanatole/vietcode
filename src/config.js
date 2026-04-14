@@ -12,16 +12,37 @@ const DEFAULT_CONFIG = {
   model: 'gpt-5.4',
   identity: 'You are an expert AI coding assistant. You are helpful, precise, and have full access to tools to improve the codebase.',
   model_mapping: {
-    'Sonnet 4.6': 'GPT-5.4',
-    'Opus 4.6': 'GPT-5.3-Codex',
-    'Haiku 4.5': 'GPT-5.2',
-    'Claude Code': 'VietCode',
-    'Claude': 'VietAPI Agent'
+    'claude-sonnet-4-6': 'gpt-5.4',
+    'claude-opus-4-6': 'gpt-5.3-codex',
+    'claude-haiku-4-5': 'gpt-5.2',
+    'sonnet 4.6': 'gpt-5.4',
+    'opus 4.6': 'gpt-5.3-codex',
+    'haiku 4.5': 'gpt-5.2',
+    'gpt-5.4': 'gpt-5.4',
+    'gpt-5.3-codex': 'gpt-5.3-codex',
+    'gpt-5.2': 'gpt-5.2'
   }
 };
 
 function normalizeModel(model) {
   return ALLOWED_MODELS.includes(model) ? model : DEFAULT_CONFIG.model;
+}
+
+function normalizeModelMapping(mapping = {}) {
+  return Object.fromEntries(
+    Object.entries(mapping).map(([key, value]) => [key.toLowerCase(), normalizeModel(value)])
+  );
+}
+
+export function resolveModelAlias(requestedModel, fallbackModel, modelMapping = {}) {
+  if (!requestedModel) {
+    return normalizeModel(fallbackModel);
+  }
+
+  const mapping = normalizeModelMapping(modelMapping);
+  const normalizedRequested = String(requestedModel).toLowerCase();
+
+  return mapping[normalizedRequested] || normalizeModel(requestedModel) || normalizeModel(fallbackModel);
 }
 
 export function loadConfig() {
@@ -35,7 +56,10 @@ export function loadConfig() {
       ...DEFAULT_CONFIG,
       ...loaded,
       model: normalizeModel(loaded.model),
-      model_mapping: { ...DEFAULT_CONFIG.model_mapping, ...(loaded.model_mapping || {}) }
+      model_mapping: {
+        ...DEFAULT_CONFIG.model_mapping,
+        ...normalizeModelMapping(loaded.model_mapping || {})
+      }
     };
   } catch (e) {
     return DEFAULT_CONFIG;
@@ -50,7 +74,11 @@ export function saveConfig(config) {
   const normalizedConfig = {
     ...DEFAULT_CONFIG,
     ...config,
-    model: normalizeModel(config.model)
+    model: normalizeModel(config.model),
+    model_mapping: {
+      ...DEFAULT_CONFIG.model_mapping,
+      ...normalizeModelMapping(config.model_mapping || {})
+    }
   };
 
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(normalizedConfig, null, 2));
@@ -65,6 +93,9 @@ export function getEffectiveConfig() {
     base_url: process.env.VIETCODE_BASE_URL || fileConfig.base_url,
     model,
     identity: process.env.VIETCODE_IDENTITY || fileConfig.identity,
-    model_mapping: fileConfig.model_mapping
+    model_mapping: {
+      ...DEFAULT_CONFIG.model_mapping,
+      ...normalizeModelMapping(fileConfig.model_mapping)
+    }
   };
 }
