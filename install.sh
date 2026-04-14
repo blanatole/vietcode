@@ -29,6 +29,11 @@ cd "$INSTALL_DIR"
 npm install --omit=dev
 npm link
 
+if ! command -v claude >/dev/null 2>&1; then
+  printf '\nClaude Code CLI not found. Installing @anthropic-ai/claude-code...\n'
+  npm install -g @anthropic-ai/claude-code
+fi
+
 if [ -z "$API_KEY" ]; then
   if [ ! -r /dev/tty ]; then
     printf '\nError: cannot prompt for API key because /dev/tty is not available.\n' >&2
@@ -56,6 +61,7 @@ vietcode model gpt-5.4
 
 printf '\nInstalled successfully.\n'
 printf 'Install directory: %s\n' "$INSTALL_DIR"
+printf 'Claude binary: %s\n' "$(command -v claude || printf 'not found')"
 printf 'Default model: gpt-5.4\n'
 printf 'Available models: gpt-5.4, gpt-5.3-codex, gpt-5.2\n'
 printf 'Run: vietcode\n'
