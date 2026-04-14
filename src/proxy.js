@@ -64,6 +64,17 @@ function sanitizeErrorBody(buffer, config) {
   return buffer;
 }
 
+function shouldStreamResponse(proxyRes, req) {
+  const contentType = String(proxyRes.headers['content-type'] || '').toLowerCase();
+  return contentType.includes('text/event-stream') || req.url?.includes('/messages');
+}
+
+function debugLog(...args) {
+  if (process.env.VIETCODE_DEBUG === '1') {
+    console.error('[vietcode]', ...args);
+  }
+}
+
 export function startProxy(port = 7888) {
   const config = getEffectiveConfig();
 
@@ -90,7 +101,7 @@ export function startProxy(port = 7888) {
       try {
         payload = JSON.parse(body.toString());
         payload = patchPayloadModel(payload, config);
-      } catch (e) {
+      } catch {
         payload = null;
       }
 
@@ -111,13 +122,26 @@ export function startProxy(port = 7888) {
       delete options.headers['content-length'];
       delete options.headers['connection'];
 
+      debugLog('request', req.method, req.url, 'model=', payload?.model || 'n/a');
+
       const connector = (isHttps ? https : http).request(options, (proxyRes) => {
+        debugLog('response', req.method, req.url, 'status=', proxyRes.statusCode, 'content-type=', proxyRes.headers['content-type'] || '');
+
+        if (shouldStreamResponse(proxyRes, req)) {
+          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          proxyRes.pipe(res);
+          return;
+        }
+
         const chunks = [];
         proxyRes.on('data', (chunk) => chunks.push(chunk));
         proxyRes.on('end', () => {
           const responseBuffer = Buffer.concat(chunks);
           const patchedBuffer = sanitizeErrorBody(responseBuffer, config);
-          const headers = { ...proxyRes.headers, 'content-length': Buffer.byteLength(patchedBuffer) };
+          const headers = {
+            ...proxyRes.headers,
+            'content-length': Buffer.byteLength(patchedBuffer)
+          };
           res.writeHead(proxyRes.statusCode, headers);
           res.end(patchedBuffer);
         });
