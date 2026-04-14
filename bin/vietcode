@@ -1,0 +1,119 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import { Command } from 'commander';
+import { inspectClaudeBinary, run } from '../src/launcher.js';
+import { ALLOWED_MODELS, loadConfig, saveConfig } from '../src/config.js';
+import chalk from 'chalk';
+
+const program = new Command();
+
+program
+  .name('vietcode')
+  .description('AI Coding Assistant (Claude Code wrapper for VietAPI)')
+  .version('1.0.0');
+
+program
+  .command('config')
+  .description('Setup configuration')
+  .option('-k, --key <key>', 'API Key')
+  .option('-b, --base <url>', 'Base URL (default: https://vietapi.tech)')
+  .action((options) => {
+    const config = loadConfig();
+    if (options.key) config.api_key = options.key;
+    if (options.base) config.base_url = options.base;
+
+    saveConfig(config);
+    console.log(chalk.green('Configuration saved!'));
+    console.log({
+      ...config,
+      api_key: config.api_key ? '***configured***' : ''
+    });
+  });
+
+program
+  .command('model [name]')
+  .description('Get or set model')
+  .action((name) => {
+    const config = loadConfig();
+
+    if (!name) {
+      console.log(chalk.cyan(`Current model: ${config.model}`));
+      console.log(`Available models: ${ALLOWED_MODELS.join(', ')}`);
+      return;
+    }
+
+    if (!ALLOWED_MODELS.includes(name)) {
+      console.log(chalk.red(`Invalid model: ${name}`));
+      console.log(`Allowed models: ${ALLOWED_MODELS.join(', ')}`);
+      process.exit(1);
+    }
+
+    config.model = name;
+    saveConfig(config);
+    console.log(chalk.green(`Model set to ${name}`));
+  });
+
+program
+  .command('doctor')
+  .description('Check local environment and configuration')
+  .action(() => {
+    const config = loadConfig();
+    const claudeInspection = inspectClaudeBinary();
+    const checks = [
+      {
+        label: 'Node.js version',
+        ok: Number(process.versions.node.split('.')[0]) >= 18,
+        detail: process.versions.node
+      },
+      {
+        label: 'API key configured',
+        ok: Boolean(config.api_key || process.env.VIETCODE_API_KEY),
+        detail: config.api_key || process.env.VIETCODE_API_KEY ? 'yes' : 'no'
+      },
+      {
+        label: 'Base URL configured',
+        ok: Boolean(config.base_url || process.env.VIETCODE_BASE_URL),
+        detail: process.env.VIETCODE_BASE_URL || config.base_url
+      },
+      {
+        label: 'Model allowed',
+        ok: ALLOWED_MODELS.includes(config.model),
+        detail: config.model
+      },
+      {
+        label: 'CLAUDE_CODE_BIN override',
+        ok: !process.env.CLAUDE_CODE_BIN || fs.existsSync(process.env.CLAUDE_CODE_BIN),
+        detail: process.env.CLAUDE_CODE_BIN || 'not set'
+      },
+      {
+        label: 'Claude binary resolved',
+        ok: claudeInspection.exists,
+        detail: `${claudeInspection.source}: ${claudeInspection.path}`
+      }
+    ];
+
+    for (const check of checks) {
+      const status = check.ok ? chalk.green('OK') : chalk.red('FAIL');
+      console.log(`${status} ${check.label}: ${check.detail}`);
+    }
+
+    console.log('\nClaude binary lookup order:');
+    console.log('1. CLAUDE_CODE_BIN');
+    console.log('2. claude in PATH');
+    console.log('3. Supported editor extensions under home directory');
+
+    if (claudeInspection.candidates?.length) {
+      console.log('\nResolved extension candidates:');
+      for (const candidate of claudeInspection.candidates) {
+        console.log(`- ${candidate}`);
+      }
+    }
+  });
+
+program
+  .argument('[args...]', 'Arguments passed to Claude Code')
+  .action(async () => {
+    await run();
+  });
+
+program.parse(process.argv);

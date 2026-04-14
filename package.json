@@ -1,0 +1,28 @@
+{
+  "name": "vietcode",
+  "version": "1.0.0",
+  "description": "A cross-platform Claude Code wrapper for VietAPI",
+  "main": "src/launcher.js",
+  "bin": {
+    "vietcode": "bin/vietcode"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/launcher.js",
+    "doctor": "node bin/vietcode doctor"
+  },
+  "keywords": [
+    "vietcode",
+    "claude-code",
+    "vietapi",
+    "cli",
+    "proxy"
+  ],
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0"
+  }
+}
