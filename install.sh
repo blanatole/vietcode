@@ -3,6 +3,7 @@ set -e
 
 REPO_URL="${VIETCODE_REPO_URL:-https://github.com/blanatole/vietcode.git}"
 INSTALL_DIR="${VIETCODE_INSTALL_DIR:-$HOME/.vietcode-cli}"
+API_KEY="${VIETCODE_API_KEY:-}"
 
 if ! command -v git >/dev/null 2>&1; then
   printf 'Error: git is required. Please install git first.\n' >&2
@@ -28,11 +29,22 @@ cd "$INSTALL_DIR"
 npm install --omit=dev
 npm link
 
-printf '\nEnter your VietCode API key: '
-stty -echo
-read -r API_KEY
-stty echo
-printf '\n'
+if [ -z "$API_KEY" ]; then
+  if [ ! -r /dev/tty ]; then
+    printf '\nError: cannot prompt for API key because /dev/tty is not available.\n' >&2
+    printf 'Please rerun with VIETCODE_API_KEY set, for example:\n' >&2
+    printf 'VIETCODE_API_KEY=your_key curl -fsSL https://raw.githubusercontent.com/blanatole/vietcode/main/install.sh | bash\n' >&2
+    exit 1
+  fi
+
+  printf '\nEnter your VietCode API key: ' > /dev/tty
+  stty -echo < /dev/tty
+  trap 'stty echo < /dev/tty' EXIT
+  read -r API_KEY < /dev/tty
+  stty echo < /dev/tty
+  trap - EXIT
+  printf '\n' > /dev/tty
+fi
 
 if [ -z "$API_KEY" ]; then
   printf 'Error: API key cannot be empty.\n' >&2
