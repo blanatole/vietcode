@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { Command } from 'commander';
 import { inspectClaudeBinary, run } from '../src/launcher.js';
-import { ALLOWED_MODELS, loadConfig, saveConfig } from '../src/config.js';
+import { ALLOWED_MODELS, getEffectiveConfig, getModelAlias, loadConfig, saveConfig } from '../src/config.js';
 import chalk from 'chalk';
 
 const program = new Command();
@@ -37,8 +37,9 @@ program
     const config = loadConfig();
 
     if (!name) {
-      console.log(chalk.cyan(`Current model: ${config.model}`));
-      console.log(`Available models: ${ALLOWED_MODELS.join(', ')}`);
+      console.log(chalk.cyan(`Current backend model: ${config.model}`));
+      console.log(chalk.cyan(`Claude UI alias: ${getModelAlias(config.model)}`));
+      console.log(`Available backend models: ${ALLOWED_MODELS.join(', ')}`);
       return;
     }
 
@@ -50,7 +51,23 @@ program
 
     config.model = name;
     saveConfig(config);
-    console.log(chalk.green(`Model set to ${name}`));
+    console.log(chalk.green(`Backend model set to ${name}`));
+    console.log(chalk.cyan(`Claude UI alias: ${getModelAlias(name)}`));
+  });
+
+program
+  .command('status')
+  .description('Show active VietCode runtime configuration')
+  .action(() => {
+    const config = getEffectiveConfig();
+    const claudeInspection = inspectClaudeBinary();
+
+    console.log(chalk.cyan('VietCode status'));
+    console.log(`Backend model: ${config.model}`);
+    console.log(`Claude UI alias: ${getModelAlias(config.model)}`);
+    console.log(`Base URL: ${config.base_url}`);
+    console.log(`API key configured: ${config.api_key ? 'yes' : 'no'}`);
+    console.log(`Claude binary: ${claudeInspection.path}`);
   });
 
 program
@@ -76,9 +93,9 @@ program
         detail: process.env.VIETCODE_BASE_URL || config.base_url
       },
       {
-        label: 'Model allowed',
+        label: 'Backend model allowed',
         ok: ALLOWED_MODELS.includes(config.model),
-        detail: config.model
+        detail: `${config.model} (${getModelAlias(config.model)})`
       },
       {
         label: 'CLAUDE_CODE_BIN override',

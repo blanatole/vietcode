@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { startProxy } from './proxy.js';
-import { getEffectiveConfig } from './config.js';
+import { getEffectiveConfig, getModelAlias } from './config.js';
 import chalk from 'chalk';
 
 function getExtensionBinaryCandidates() {
@@ -103,6 +103,9 @@ export async function run() {
   const proxy = startProxy(PROXY_PORT);
 
   console.log(chalk.cyan('Starting Claude Code via VietCode...'));
+  console.log(chalk.green(`Backend model: ${config.model}`));
+  console.log(chalk.green(`Claude UI alias: ${getModelAlias(config.model)}`));
+  console.log(chalk.gray(`Proxy URL: http://localhost:${PROXY_PORT}`));
 
   const claudeExe = resolveClaudeBinary();
   const env = {

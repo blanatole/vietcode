@@ -6,6 +6,12 @@ const CONFIG_DIR = path.join(os.homedir(), '.vietcode');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 export const ALLOWED_MODELS = ['gpt-5.4', 'gpt-5.3-codex', 'gpt-5.2'];
 
+const BACKEND_TO_ALIAS = {
+  'gpt-5.4': 'Sonnet 4.6',
+  'gpt-5.3-codex': 'Opus 4.6',
+  'gpt-5.2': 'Haiku 4.5'
+};
+
 const DEFAULT_CONFIG = {
   api_key: '',
   base_url: 'https://vietapi.tech',
@@ -32,6 +38,10 @@ function normalizeModelMapping(mapping = {}) {
   return Object.fromEntries(
     Object.entries(mapping).map(([key, value]) => [key.toLowerCase(), normalizeModel(value)])
   );
+}
+
+export function getModelAlias(model) {
+  return BACKEND_TO_ALIAS[normalizeModel(model)] || BACKEND_TO_ALIAS[DEFAULT_CONFIG.model];
 }
 
 export function resolveModelAlias(requestedModel, fallbackModel, modelMapping = {}) {
