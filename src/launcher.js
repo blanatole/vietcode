@@ -107,7 +107,7 @@ export async function run() {
   const claudeExe = resolveClaudeBinary();
   const env = {
     ...process.env,
-    ANTHROPIC_BASE_URL: `http://localhost:${PROXY_PORT}/v1`,
+    ANTHROPIC_BASE_URL: `http://localhost:${PROXY_PORT}`,
     ANTHROPIC_API_KEY: config.api_key,
     VIETCODE_PROXY_PORT: PROXY_PORT.toString()
   };
