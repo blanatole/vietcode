@@ -112,13 +112,14 @@ export async function run() {
     ...process.env,
     ANTHROPIC_BASE_URL: `http://localhost:${PROXY_PORT}`,
     ANTHROPIC_API_KEY: config.api_key,
-    VIETCODE_PROXY_PORT: PROXY_PORT.toString()
+    VIETCODE_PROXY_PORT: PROXY_PORT.toString(),
+    CLAUDE_CODE_SIMPLE: '1'
   };
 
   delete env.ANTHROPIC_AUTH_TOKEN;
   delete env.CLAUDE_CODE_OAUTH_TOKEN;
 
-  const args = ['--bare', ...process.argv.slice(2)];
+  const args = process.argv.slice(2);
 
   const child = spawn(claudeExe, args, {
     stdio: 'inherit',
