@@ -151,19 +151,27 @@ configure_file() {
 echo "${BLUE}Configuring shell environment...${NC}"
 
 SHELL_FOUND=0
+SHELL_RC_FILE=""
 if [ -f "$HOME/.bashrc" ]; then
     configure_file "$HOME/.bashrc"
+    SHELL_RC_FILE="$HOME/.bashrc"
     SHELL_FOUND=1
 fi
 if [ -f "$HOME/.zshrc" ]; then
     configure_file "$HOME/.zshrc"
+    SHELL_RC_FILE="$HOME/.zshrc"
     SHELL_FOUND=1
 fi
 
 if [ "$SHELL_FOUND" -eq 0 ]; then
-    echo "${YELLOW}  No .bashrc or .zshrc found, creating .zshrc${NC}"
-    touch "$HOME/.zshrc"
-    configure_file "$HOME/.zshrc"
+    # Detect current shell and create the appropriate rc file
+    case "$SHELL" in
+        */zsh)  SHELL_RC_FILE="$HOME/.zshrc" ;;
+        *)      SHELL_RC_FILE="$HOME/.bashrc" ;;
+    esac
+    echo "${YELLOW}  No .bashrc or .zshrc found, creating $SHELL_RC_FILE${NC}"
+    touch "$SHELL_RC_FILE"
+    configure_file "$SHELL_RC_FILE"
 fi
 
 echo ""
@@ -245,7 +253,11 @@ echo "    Opus   → ${CYAN}$OPUS_MODEL${NC}"
 echo "    Haiku  → ${CYAN}$HAIKU_MODEL${NC}"
 echo ""
 echo "${YELLOW}Next steps:${NC}"
-echo "  1. Restart your terminal or run: ${BLUE}source ~/.zshrc${NC}"
+if [ -n "$SHELL_RC_FILE" ]; then
+    echo "  1. Restart your terminal or run: ${BLUE}source $SHELL_RC_FILE${NC}"
+else
+    echo "  1. Restart your terminal"
+fi
 echo "  2. Run: ${BLUE}claude${NC}"
 echo "     Or:  ${BLUE}vietcode${NC}"
 echo ""
