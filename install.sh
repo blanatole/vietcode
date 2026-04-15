@@ -2,9 +2,10 @@
 # Configures Claude Code CLI to use VietAPI
 set -e
 
-# Configuration (auto-populated by server or passed via env)
+# Configuration
+# Priority: $1 argument > env var > interactive prompt
 ENDPOINT_URL="${VIETCODE_BASE_URL:-https://vietapi.tech}"
-API_KEY="${VIETCODE_API_KEY:-}"
+API_KEY="${1:-${VIETCODE_API_KEY:-}}"
 HAIKU_MODEL="gpt-5.2"
 OPUS_MODEL="gpt-5.3-codex"
 SONNET_MODEL="gpt-5.4"
@@ -23,12 +24,12 @@ echo "${CYAN}  Claude Code × VietAPI${NC}"
 echo "${CYAN}================================${NC}"
 echo ""
 
-# Prompt for API key if not provided
+# Prompt for API key if not provided via argument or env
 if [ -z "$API_KEY" ]; then
   if [ ! -r /dev/tty ]; then
-    echo "${RED}Error: cannot prompt for API key because /dev/tty is not available.${NC}"
-    echo "Please rerun with VIETCODE_API_KEY set, for example:"
-    echo "  ${BLUE}VIETCODE_API_KEY=your_key curl -fsSL https://raw.githubusercontent.com/blanatole/vietcode/main/install.sh | sh${NC}"
+    echo "${RED}Error: API key not provided.${NC}"
+    echo "Usage:"
+    echo "  ${BLUE}curl -fsSL .../install.sh | sh -s -- \"YOUR_KEY\"${NC}"
     exit 1
   fi
 
