@@ -231,12 +231,20 @@ else
     echo "${YELLOW}You can still use Claude Code directly with the configured settings.${NC}"
 fi
 
-# Check for Claude Code CLI
+# Install Claude Code CLI if not found
 if ! command -v claude >/dev/null 2>&1; then
     echo ""
-    echo "${YELLOW}Claude Code CLI not found in PATH.${NC}"
-    echo "To install it, run:"
-    echo "  ${BLUE}npm install -g @anthropic-ai/claude-code${NC}"
+    echo "${BLUE}Installing Claude Code CLI...${NC}"
+    npm install -g @anthropic-ai/claude-code 2>/dev/null
+    if command -v claude >/dev/null 2>&1; then
+        echo "  ${GREEN}✓ Claude Code CLI installed${NC}"
+    else
+        echo "  ${YELLOW}⚠ Could not install Claude Code CLI automatically.${NC}"
+        echo "  Try manually: ${BLUE}npm install -g @anthropic-ai/claude-code${NC}"
+    fi
+else
+    echo ""
+    echo "  ${GREEN}✓ Claude Code CLI already installed: $(which claude)${NC}"
 fi
 
 echo ""
